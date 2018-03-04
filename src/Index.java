@@ -4,6 +4,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class Index {
@@ -111,8 +112,7 @@ public class Index {
             total += index.All_Scenes.get(scene).size();
         }
         double averageLengthScene = total / numberScenes;
-        System.out.println("Average Length of Scene: " + averageLengthScene);
-        System.out.println();
+        //System.out.println("Average Length of Scene: " + averageLengthScene);
 
         //shortest scene
         String sceneNameShortest = "";
@@ -125,9 +125,8 @@ public class Index {
                 sceneSize = newSceneSize;
             }
         }
-        System.out.println("Shortest Scene: " + sceneNameShortest);
+        //System.out.println("Shortest Scene: " + sceneNameShortest);
         //System.out.println("Size: " + sceneSize);
-        System.out.println();
 
         //create play hashMap
         HashMap<String, ArrayList<Integer>> plays = new HashMap<>();
@@ -151,12 +150,10 @@ public class Index {
                longestPlayLength = newPlayLength;
            }
         }
-        System.out.println("Longest Play: " + longestPlayName);
+        //System.out.println("Longest Play: " + longestPlayName);
         //System.out.println("Size: " + longestPlayLength);
-        System.out.println();
 
         //shortest play
-
         String shortestPlayName = "";
         int shortestPlayLength = 999999999;
 
@@ -167,9 +164,58 @@ public class Index {
                 shortestPlayLength = newPlayLength;
             }
         }
-        System.out.println("Shortest Play: " + shortestPlayName);
+        //System.out.println("Shortest Play: " + shortestPlayName);
         //System.out.println("Size: " + longestPlayLength);
 
+        //graph values - redundancy everywhere
+        HashMap<String, HashMap<String, Integer>> graphValues = new HashMap<>();
+
+        ArrayList<String> sortedScenes = new ArrayList<>(index.All_Scenes.keySet());
+        Collections.sort(sortedScenes);
+
+        String[] words = {"you", "thee", "thou"};
+        HashMap<String, Integer> youCount = new HashMap<>();
+        HashMap<String, Integer> theeCount = new HashMap<>();
+        HashMap<String, Integer> thouCount = new HashMap<>();
+
+        for(String scene : sortedScenes) {
+            youCount.put(scene, null);
+            theeCount.put(scene, null);
+            thouCount.put(scene, null);
+        }
+
+        graphValues.put("you", youCount);
+        graphValues.put("thee", theeCount);
+        graphValues.put("thou", thouCount);
+
+        for(String word : words) {
+            HashMap<String, ArrayList<Integer>> retrievedWord = index.dataStorage.get(word);
+            for(String scene : retrievedWord.keySet()) {
+                int wordCount = retrievedWord.get(scene).size();
+                graphValues.get(word).replace(scene, wordCount);
+            }
+        }
+
+        for(String word: graphValues.keySet()) {
+            HashMap<String, Integer> scenes = graphValues.get(word);
+            for(String scene: scenes.keySet()) {
+                if(scenes.get(scene) == null) {
+                    scenes.replace(scene, 0);
+                }
+            }
+        }
+
+        graphValues.get("thee").forEach((k, v) -> graphValues.get("thou").merge(k, v, Integer::sum));
+
+        Object[] youValues = graphValues.get("you").values().toArray();
+        Object[] theeThouValues = graphValues.get("thou").values().toArray();
+
+        //this will print all the entry points for graphing
+        /*
+        for(int x = 0; x < youValues.length; x++) {
+            System.out.println(youValues[x] + "," + theeThouValues[x]);
+        }
+        */
 
     }
 
