@@ -11,14 +11,14 @@ public class Index {
     private HashMap<String, HashMap<String, ArrayList<Integer>>> dataStorage;
     private HashMap<String, String[]> sceneText;
 
-    public Index() {
+    private Index() {
         dataStorage = new HashMap<>();
         sceneText = new HashMap<>();
     }
 
     public static void main(String[] args) throws IOException, ParseException {
         Index index = new Index();
-        HashMap<String, HashMap<String, ArrayList<Integer>>> dataStorage = index.readJSON("shakespeare-scenes.json");
+        HashMap dataStorage = index.readJSON("shakespeare-scenes.json");
         //index.writeDataHashMap("results.txt", dataStorage);
 
         //terms 0
@@ -34,34 +34,34 @@ public class Index {
         terms1List[0] = "Verona";
         terms1List[1] = "Rome";
         terms1List[2] = "Italy";
-        HashMap<String, ArrayList<String>> terms1 = index.isMentioned(terms1List, "s");
+        HashMap terms1 = index.isMentioned(terms1List, "s");
         index.writeTermFiles("terms1.txt", terms1);
 
         //terms 2
         String[] terms2List = new String[1];
         terms2List[0] = "falstaff";
-        HashMap<String, ArrayList<String>> terms2 = index.isMentioned(terms2List, "p");
+        HashMap terms2 = index.isMentioned(terms2List, "p");
         index.writeTermFiles("terms2.txt", terms2);
 
         //terms 3
         String[] terms3List = new String[1];
         terms3List[0] = "Soldier";
-        HashMap<String, ArrayList<String>> terms3 = index.isMentioned(terms3List, "p");
+        HashMap terms3 = index.isMentioned(terms3List, "p");
         index.writeTermFiles("terms3.txt", terms3);
 
         //phrase 0
         String phraseWord0 = "lady macbeth";
-        HashMap<String, ArrayList<String>> phrase0 = index.phraseMentioned(phraseWord0);
+        HashMap phrase0 = index.phraseMentioned(phraseWord0);
         index.writeTermFiles("phrase0.txt", phrase0);
 
         //phrase 1
         String phraseWord1 = "a rose by any other name";
-        HashMap<String, ArrayList<String>> phrase1 = index.phraseMentioned(phraseWord1);
+        HashMap phrase1 = index.phraseMentioned(phraseWord1);
         index.writeTermFiles("phrase1.txt", phrase1);
 
         //phrase 2
         String phraseWord2 = "cry havoc";
-        HashMap<String, ArrayList<String>> phrase2 = index.phraseMentioned(phraseWord2);
+        HashMap phrase2 = index.phraseMentioned(phraseWord2);
         index.writeTermFiles("phrase2.txt", phrase2);
 
     }
@@ -111,10 +111,6 @@ public class Index {
 
             }
         } catch(FileNotFoundException e) {
-            e.printStackTrace();
-        } catch(IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
             e.printStackTrace();
         }
         return dataStorage;
@@ -236,7 +232,7 @@ public class Index {
             if (dataStorage.containsKey(word.toLowerCase())) {
                 HashMap<String, ArrayList<Integer>> termValues = dataStorage.get(word.toLowerCase());
                 for (String scene : termValues.keySet()) {
-                    String play = scene.split("\\:")[0];
+                    String play = scene.split(":")[0];
                     if (!plays.contains(play)) {
                         plays.add(play);
                     }
