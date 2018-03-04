@@ -189,7 +189,6 @@ public class Index {
         }
 
         //comparison for all scenes of other word
-
         ArrayList<String> finalScenes = new ArrayList<>();
         for(String scene : morethanWordCounts.keySet()) {
             try {
@@ -208,8 +207,6 @@ public class Index {
         }
 
         //comparison for all scenes of words
-        /*
-        ArrayList<String> finalScenes = new ArrayList<>();
         for(String scene : unionScenes.keySet()) {
             try {
                 int wordCountWords = unionScenes.get(scene);
@@ -225,7 +222,7 @@ public class Index {
                 }
             }
         }
-        */
+
         result.put("Result", finalScenes);
         return result;
     }
