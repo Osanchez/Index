@@ -4,16 +4,16 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 
 public class Index {
     //Map<Term, HashMap<DocId, ArrayList<Positions>>>
     private HashMap<String, HashMap<String, ArrayList<Integer>>> dataStorage;
+    private HashMap<String, String[]> sceneText;
 
     public Index() {
         dataStorage = new HashMap<>();
+        sceneText = new HashMap<>();
     }
 
     public static void main(String[] args) throws IOException, ParseException {
@@ -49,6 +49,21 @@ public class Index {
         HashMap<String, ArrayList<String>> terms3 = index.isMentioned(terms3List, "p");
         index.writeTermFiles("terms3.txt", terms3);
 
+        //phrase 0
+        String phraseWord0 = "lady macbeth";
+        HashMap<String, ArrayList<String>> phrase0 = index.phraseMentioned(phraseWord0);
+        index.writeTermFiles("phrase0.txt", phrase0);
+
+        //phrase 1
+        String phraseWord1 = "a rose by any other name";
+        HashMap<String, ArrayList<String>> phrase1 = index.phraseMentioned(phraseWord1);
+        index.writeTermFiles("phrase1.txt", phrase1);
+
+        //phrase 2
+        String phraseWord2 = "cry havoc";
+        HashMap<String, ArrayList<String>> phrase2 = index.phraseMentioned(phraseWord2);
+        index.writeTermFiles("phrase2.txt", phrase2);
+
     }
 
     private HashMap readJSON(String fileName) throws ParseException, IOException {
@@ -67,6 +82,8 @@ public class Index {
                String sceneID = (String) object.get("sceneId");
                String text = (String) object.get("text");
                String[] text_array = text.split("\\s+");
+
+               sceneText.put(sceneID, text_array); //helper collection for phrases
 
                for(int x = 0; x < text_array.length; x++) {
                    if (dataStorage.containsKey(text_array[x])) {
@@ -114,9 +131,20 @@ public class Index {
 
     private void writeTermFiles(String fileName, HashMap data)
             throws IOException {
+        HashMap<String, ArrayList<String>> copyData = data;
         BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
-        for(Object entry : data.entrySet()) {
-            writer.write(entry.toString());
+        ArrayList<String> alphabeticallySorted = new ArrayList<>();
+        for(String entry: copyData.keySet()){
+            ArrayList<String> dataEntries = copyData.get(entry);
+            for(String dataentry : dataEntries) {
+                if(!alphabeticallySorted.contains(dataentry)) {
+                    alphabeticallySorted.add(dataentry);
+                }
+            }
+        }
+        Collections.sort(alphabeticallySorted);
+        for(String entry : alphabeticallySorted) {
+            writer.write(entry);
             writer.newLine();
         }
         writer.close();
@@ -124,26 +152,81 @@ public class Index {
 
     private HashMap<String, ArrayList<String>> usedMoreThan(String[] words, String moreThanWord) { //scenes
         HashMap<String, ArrayList<String>> result = new HashMap<>();
+
+        HashMap<String, HashMap<String, Integer>> wordCounts = new HashMap<>(); //words
+        HashMap<String, Integer> morethanWordCounts = new HashMap<>();
+
+        //word count for each scene moreThanWord appears in
+        HashMap<String, ArrayList<Integer>> moreThanWordScenes = dataStorage.get(moreThanWord);
+        for(String scene : moreThanWordScenes.keySet()) {
+            morethanWordCounts.put(scene, moreThanWordScenes.get(scene).size());
+        }
+
+        //word count for each scene each word appears in
         for(String word : words) {
-            ArrayList<String> scenes = new ArrayList<>();
-            //scene, index
-            HashMap<String, ArrayList<Integer>> wordStorage = dataStorage.get(word);
-            for(String scene: wordStorage.keySet()) {
-                int wordCount = wordStorage.get(scene).size();
-                try {
-                    int moreThanWordCount = dataStorage.get(moreThanWord).get(scene).size();
-                    if(wordCount > moreThanWordCount) {
-                        scenes.add(scene);
-                    }
-                } catch (NullPointerException e) { //in the case that 'you' does not appear in the scene for the word
-                    int moreThanWordCount = 0;
-                    if(wordCount > moreThanWordCount) {
-                        scenes.add(scene);
-                    }
+            HashMap<String, ArrayList<Integer>> wordScenes = dataStorage.get(word);
+            HashMap<String, Integer> sceneWordCount = new HashMap<>();
+            for(String scene : wordScenes.keySet()) {
+                int wordCountScene = wordScenes.get(scene).size();
+                sceneWordCount.put(scene, wordCountScene);
+            }
+            wordCounts.put(word, sceneWordCount);
+        }
+
+        //get union of words for each scene
+        HashMap<String, Integer> unionScenes = new HashMap<>();
+        for(String word : wordCounts.keySet()) {
+            HashMap<String, Integer> scenes = wordCounts.get(word);
+            for(String scene : scenes.keySet()) {
+                if(unionScenes.containsKey(scene)) {
+                    int current = unionScenes.get(scene);
+                    int add = scenes.get(scene);
+                    unionScenes.replace(scene, current + add);
+                } else {
+                    unionScenes.put(scene, scenes.get(scene));
                 }
             }
-            result.put(word, scenes);
         }
+
+        //comparison for all scenes of other word
+
+        ArrayList<String> finalScenes = new ArrayList<>();
+        for(String scene : morethanWordCounts.keySet()) {
+            try {
+                int wordCountWords = unionScenes.get(scene);
+                int wordCountMoreThanWord = morethanWordCounts.get(scene);
+                if(wordCountWords > wordCountMoreThanWord) {
+                    finalScenes.add(scene);
+                }
+            } catch (NullPointerException e) { //if the moreThanWord does not appear at all
+                int wordCountWords = 0;
+                int wordCountMoreThanWord = morethanWordCounts.get(scene);
+                if(wordCountWords > wordCountMoreThanWord) {
+                    finalScenes.add(scene);
+                }
+            }
+        }
+
+        //comparison for all scenes of words
+        /*
+        ArrayList<String> finalScenes = new ArrayList<>();
+        for(String scene : unionScenes.keySet()) {
+            try {
+                int wordCountWords = unionScenes.get(scene);
+                int wordCountMoreThanWord = morethanWordCounts.get(scene);
+                if(wordCountWords > wordCountMoreThanWord) {
+                    finalScenes.add(scene);
+                }
+            } catch (NullPointerException e) { //if the moreThanWord does not appear at all
+                int wordCountWords = unionScenes.get(scene);
+                int wordCountMoreThanWord = 0;
+                if(wordCountWords > wordCountMoreThanWord) {
+                    finalScenes.add(scene);
+                }
+            }
+        }
+        */
+        result.put("Result", finalScenes);
         return result;
     }
 
@@ -171,6 +254,36 @@ public class Index {
                 }
             }
         }
+        return result;
+    }
+
+    private HashMap phraseMentioned(String phrase) { //scenes
+        HashMap<String, ArrayList<String>> result = new HashMap<>();
+        ArrayList<String> scenes = new ArrayList<>();
+        String[] splitPhrase = phrase.split(" ");
+        int wordsInPhrase = splitPhrase.length;
+        boolean phraseInScene;
+
+        //scenes that contain the first word
+        HashMap<String, ArrayList<Integer>> possibleScenes = dataStorage.get(splitPhrase[0]); //all scenes with first word
+        for(String scene: possibleScenes.keySet()) { //for all scenes that have the first word
+            ArrayList<Integer> wordIndex = possibleScenes.get(scene); //all indexes of first word in scene
+            for(Integer index: wordIndex) { //for each index of first word
+                phraseInScene = true; //by default start with true
+                String[] text = sceneText.get(scene); //get the text for comparison
+                for(int x = 0; x < wordsInPhrase; x++) { //iterate every word in phrase
+                    if(!splitPhrase[x].equals(text[index + x])) { //check if next text word matches next phrase word
+                        phraseInScene = false;
+                        break;
+                    }
+                }
+                if(phraseInScene){
+                    scenes.add(scene);
+                    break;
+                }
+            }
+        }
+        result.put(phrase, scenes);
         return result;
     }
 }
