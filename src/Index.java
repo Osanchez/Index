@@ -163,11 +163,11 @@ public class Index {
         for(String play : plays.keySet()) {
             int newPlayLength =  plays.get(play).size();
             if(newPlayLength < shortestPlayLength) {
-                longestPlayName = play;
-                longestPlayLength = newPlayLength;
+                shortestPlayName = play;
+                shortestPlayLength = newPlayLength;
             }
         }
-        System.out.println("Shortest Play: " + longestPlayName);
+        System.out.println("Shortest Play: " + shortestPlayName);
         //System.out.println("Size: " + longestPlayLength);
 
 
